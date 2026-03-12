@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+frontend/node_modules/
+backend/venv/
+venv/
+
+# Expo
+.expo/
+frontend/.expo/
+dist/
+web-build/
+
+# Python
+__pycache__/
+backend/__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Native mobile folders
+frontend/ios/
+frontend/android/
