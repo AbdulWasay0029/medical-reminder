@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
-            const response = await authAPI.login(email.trim(), password);
+            const response = await authAPI.login(email.trim().toLowerCase(), password);
             await login(response.token, response.user);
 
             if (response.user.role === 'member' || response.user.role === 'patient') {
@@ -40,7 +40,8 @@ export default function LoginScreen() {
                 router.replace('/caregiver');
             }
         } catch (error: any) {
-            Alert.alert('Login Failed', error.response?.data?.detail || 'Invalid credentials');
+            const msg = error.response?.data?.detail || error.message || 'Invalid credentials';
+            Alert.alert('Login Failed', msg);
         } finally {
             setLoading(false);
         }

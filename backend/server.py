@@ -94,12 +94,16 @@ class MedicineCreate(BaseModel):
     name: str
     dosage: str
     reminderTimes: List[str]   # ["08:00", "20:00"]
+    startDate: Optional[str] = None # "YYYY-MM-DD"
+    endDate: Optional[str] = None   # "YYYY-MM-DD"
     notes: Optional[str] = None
 
 class MedicineUpdate(BaseModel):
     name: Optional[str] = None
     dosage: Optional[str] = None
     reminderTimes: Optional[List[str]] = None
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
     notes: Optional[str] = None
 
 class MarkTakenRequest(BaseModel):
@@ -154,6 +158,8 @@ async def create_medicine(body: MedicineCreate, user_id: str = None):
             "patientId": user_id,   # store as string — no ObjectId confusion
             "name": body.name, "dosage": body.dosage,
             "reminderTimes": body.reminderTimes,
+            "startDate": body.startDate,
+            "endDate": body.endDate,
             "notes": body.notes or "",
             "createdAt": datetime.utcnow()
         }
@@ -235,6 +241,16 @@ async def get_dashboard(patient_id: str, tz_offset: int = 0):
         items = []
         for med in medicines:
             med_id = str(med["_id"])
+            
+            # DATE RANGE FILTERING
+            start = med.get("startDate") # "YYYY-MM-DD"
+            end = med.get("endDate")
+            
+            if start and today_str < start:
+                continue # hasn't started yet
+            if end and today_str > end:
+                continue # treatment finished
+            
             for t in med.get("reminderTimes", []):
                 h, m = map(int, t.split(":"))
                 log = log_index.get((med_id, t))

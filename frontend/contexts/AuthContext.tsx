@@ -5,7 +5,7 @@ interface User {
     id: string;
     name: string;
     email: string;
-    role: 'patient' | 'caregiver';
+    role: 'patient' | 'caregiver' | 'member' | 'guardian';
     inviteCode?: string;
 }
 

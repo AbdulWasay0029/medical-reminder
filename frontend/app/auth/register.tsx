@@ -33,7 +33,7 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            const response = await authAPI.register(name.trim(), email.trim(), password, role);
+            const response = await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
             await login(response.token, response.user);
 
             if (role === 'member') {
@@ -42,7 +42,8 @@ export default function RegisterScreen() {
                 router.replace('/caregiver');
             }
         } catch (error: any) {
-            Alert.alert('Registration Failed', error.response?.data?.detail || 'Please try again');
+            const msg = error.response?.data?.detail || error.message || 'Please try again';
+            Alert.alert('Registration Failed', msg);
         } finally {
             setLoading(false);
         }

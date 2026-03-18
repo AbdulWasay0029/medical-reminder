@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MediRemind",
-    "slug": "mediremind",
+    "name": "HealthSync",
+    "slug": "healthsync",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -22,7 +22,8 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM"
       ],
       "package": "com.abdulwasay0029.mediremind"
     },

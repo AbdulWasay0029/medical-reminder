@@ -13,8 +13,7 @@ export default function CaregiverLayout() {
                     borderTopColor: '#E5E7EB',
                     borderTopWidth: 1,
                     paddingTop: 8,
-                    paddingBottom: 8,
-                    height: 60,
+                    paddingBottom: 24, // Increased padding to clear on-screen buttons
                 },
                 headerStyle: { backgroundColor: '#10B981' },
                 headerTintColor: '#FFFFFF',

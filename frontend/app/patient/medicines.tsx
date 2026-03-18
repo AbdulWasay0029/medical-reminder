@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { medicineAPI } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { scheduleMedicineNotifications, cancelMedicineNotifications } from '../../utils/notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Medicine {
     id: string;
@@ -15,17 +16,16 @@ interface Medicine {
     dosage: string;
     reminderTimes: string[];
     notes: string;
+    startDate?: string;
+    endDate?: string;
 }
 
-// Validate and normalize a time string typed as HH:MM (24h)
-function validateTime(raw: string): string | null {
-    const trimmed = raw.trim();
-    const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return null;
-    const h = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10);
-    if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+// Helper to format 24h string to display AM/PM
+function formatDisplayTime(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
 }
 
 export default function MedicinesScreen() {
@@ -41,6 +41,17 @@ export default function MedicinesScreen() {
     const [dosage, setDosage] = useState('');
     const [times, setTimes] = useState<string[]>(['08:00']);
     const [notes, setNotes] = useState('');
+    const [startDate, setStartDate] = useState(new Date());
+    const [endDate, setEndDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        return d;
+    });
+
+    const [showPicker, setShowPicker] = useState(false);
+    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [currentPickerIndex, setCurrentPickerIndex] = useState(0);
 
     const loadMedicines = async () => {
         if (!user) return;
@@ -62,6 +73,8 @@ export default function MedicinesScreen() {
     const openAddModal = () => {
         setEditingMedicine(null);
         setName(''); setDosage(''); setTimes(['08:00']); setNotes('');
+        setStartDate(new Date());
+        const d = new Date(); d.setDate(d.getDate() + 30); setEndDate(d);
         setModalVisible(true);
     };
 
@@ -71,6 +84,8 @@ export default function MedicinesScreen() {
         setDosage(medicine.dosage);
         setTimes([...medicine.reminderTimes]);
         setNotes(medicine.notes || '');
+        if (medicine.startDate) setStartDate(new Date(medicine.startDate));
+        if (medicine.endDate) setEndDate(new Date(medicine.endDate));
         setModalVisible(true);
     };
 
@@ -80,23 +95,14 @@ export default function MedicinesScreen() {
             return;
         }
 
-        // Validate all time entries
-        const validatedTimes: string[] = [];
-        for (const t of times) {
-            const valid = validateTime(t);
-            if (!valid) {
-                Alert.alert('Invalid Time', `"${t}" is not a valid time. Use HH:MM format (00:00 – 23:59)`);
-                return;
-            }
-            validatedTimes.push(valid);
-        }
-
         setSaving(true);
         try {
             const medicineData = {
                 name: name.trim(),
                 dosage: dosage.trim(),
-                reminderTimes: validatedTimes,
+                reminderTimes: times, // Times are already HH:MM from picker
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
                 notes: notes.trim(),
             };
 
@@ -110,7 +116,13 @@ export default function MedicinesScreen() {
             }
 
             try {
-                await scheduleMedicineNotifications(medicineId, medicineData.name, medicineData.dosage, medicineData.reminderTimes);
+                await scheduleMedicineNotifications(
+                    medicineId, 
+                    medicineData.name, 
+                    medicineData.dosage, 
+                    medicineData.reminderTimes,
+                    medicineData.endDate
+                );
             } catch (e) {
                 console.warn('Notification scheduling failed:', e);
             }
@@ -151,10 +163,21 @@ export default function MedicinesScreen() {
         if (times.length > 1) setTimes(times.filter((_, i) => i !== index));
     };
 
-    const updateTime = (index: number, value: string) => {
-        const newTimes = [...times];
-        newTimes[index] = value;
-        setTimes(newTimes);
+    const onTimeChange = (event: any, selectedDate?: Date) => {
+        setShowPicker(false);
+        if (selectedDate) {
+            const h = selectedDate.getHours();
+            const m = selectedDate.getMinutes();
+            const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            const newTimes = [...times];
+            newTimes[currentPickerIndex] = timeStr;
+            setTimes(newTimes);
+        }
+    };
+
+    const openPicker = (index: number) => {
+        setCurrentPickerIndex(index);
+        setShowPicker(true);
     };
 
     const renderMedicineItem = ({ item }: { item: Medicine }) => (
@@ -166,6 +189,13 @@ export default function MedicinesScreen() {
                 <Text style={styles.medicineName}>{item.name}</Text>
                 <Text style={styles.dosage}>{item.dosage}</Text>
                 <Text style={styles.frequency}>{item.reminderTimes.length}x daily · {item.reminderTimes.join(', ')}</Text>
+                {item.startDate && item.endDate && (
+                    <Text style={styles.duration}>
+                        {new Date(item.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        {' - '}
+                        {new Date(item.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </Text>
+                )}
                 {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
             </View>
             <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
@@ -214,20 +244,18 @@ export default function MedicinesScreen() {
                             <Text style={styles.label}>Dosage *</Text>
                             <TextInput style={styles.input} value={dosage} onChangeText={setDosage} placeholder="e.g. 500mg" placeholderTextColor="#9CA3AF" />
 
-                            <Text style={styles.label}>Reminder Times (24-hour format) *</Text>
-                            <Text style={styles.hint}>Enter times like 08:00, 13:30, 21:00 (hours 0–23, minutes 0–59)</Text>
+                            <Text style={styles.label}>Reminder Times *</Text>
+                            <Text style={styles.hint}>Click a time slot to change it</Text>
 
                             {times.map((time, index) => (
                                 <View key={index} style={styles.timeRow}>
-                                    <TextInput
-                                        style={[styles.input, styles.timeInput]}
-                                        value={time}
-                                        onChangeText={v => updateTime(index, v)}
-                                        placeholder="HH:MM"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numbers-and-punctuation"
-                                        maxLength={5}
-                                    />
+                                    <TouchableOpacity 
+                                        style={[styles.input, styles.timeInput]} 
+                                        onPress={() => openPicker(index)}
+                                    >
+                                        <Text style={styles.timePickerText}>{formatDisplayTime(time)}</Text>
+                                        <Ionicons name="time-outline" size={20} color="#6B7280" />
+                                    </TouchableOpacity>
                                     {times.length > 1 && (
                                         <TouchableOpacity style={styles.removeTimeButton} onPress={() => removeTimeSlot(index)}>
                                             <Ionicons name="remove-circle" size={26} color="#EF4444" />
@@ -236,10 +264,56 @@ export default function MedicinesScreen() {
                                 </View>
                             ))}
 
+                            {showPicker && (
+                                <DateTimePicker
+                                    value={(() => {
+                                        const [h, m] = times[currentPickerIndex].split(':').map(Number);
+                                        const d = new Date();
+                                        d.setHours(h, m, 0, 0);
+                                        return d;
+                                    })()}
+                                    mode="time"
+                                    is24Hour={false}
+                                    onChange={onTimeChange}
+                                />
+                            )}
+
                             <TouchableOpacity style={styles.addTimeButton} onPress={addTimeSlot}>
                                 <Ionicons name="add-circle" size={20} color="#6366F1" />
                                 <Text style={styles.addTimeText}>Add Another Time</Text>
                             </TouchableOpacity>
+
+                            <View style={styles.datesRow}>
+                                <View style={styles.dateBox}>
+                                    <Text style={styles.label}>Start Date</Text>
+                                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowStartDatePicker(true)}>
+                                        <Text style={styles.dateInputText}>{startDate.toLocaleDateString()}</Text>
+                                        <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                                    </TouchableOpacity>
+                                    {showStartDatePicker && (
+                                        <DateTimePicker
+                                            value={startDate}
+                                            mode="date"
+                                            onChange={(e, d) => { setShowStartDatePicker(false); if (d) setStartDate(d); }}
+                                        />
+                                    )}
+                                </View>
+                                <View style={styles.dateBox}>
+                                    <Text style={styles.label}>End Date</Text>
+                                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowEndDatePicker(true)}>
+                                        <Text style={styles.dateInputText}>{endDate.toLocaleDateString()}</Text>
+                                        <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                                    </TouchableOpacity>
+                                    {showEndDatePicker && (
+                                        <DateTimePicker
+                                            value={endDate}
+                                            mode="date"
+                                            minimumDate={startDate}
+                                            onChange={(e, d) => { setShowEndDatePicker(false); if (d) setEndDate(d); }}
+                                        />
+                                    )}
+                                </View>
+                            </View>
 
                             <Text style={styles.label}>Notes (optional)</Text>
                             <TextInput
@@ -285,6 +359,7 @@ const styles = StyleSheet.create({
     medicineName: { fontSize: 17, fontWeight: '600', color: '#111827', marginBottom: 2 },
     dosage: { fontSize: 13, color: '#6B7280', marginBottom: 2 },
     frequency: { fontSize: 13, color: '#6366F1', fontWeight: '500', marginBottom: 2 },
+    duration: { fontSize: 12, color: '#6B7280', fontWeight: '400', marginBottom: 4 },
     notes: { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' },
     deleteButton: { padding: 4 },
     fab: {
@@ -312,9 +387,17 @@ const styles = StyleSheet.create({
         color: '#111827', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 14,
     },
     notesInput: { minHeight: 80, textAlignVertical: 'top' },
-    timeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-    timeInput: { flex: 1, marginBottom: 0 },
-    removeTimeButton: { marginLeft: 10, marginBottom: 14 },
+    timeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    timeInput: { 
+        flex: 1, 
+        marginBottom: 0, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        paddingRight: 16
+    },
+    timePickerText: { fontSize: 16, color: '#111827', fontWeight: '500' },
+    removeTimeButton: { marginLeft: 10 },
     addTimeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, marginBottom: 16 },
     addTimeText: { color: '#6366F1', fontSize: 14, fontWeight: '600', marginLeft: 8 },
     modalButtons: {
@@ -326,4 +409,12 @@ const styles = StyleSheet.create({
     cancelButtonText: { color: '#374151', fontSize: 16, fontWeight: '600' },
     saveButton: { backgroundColor: '#6366F1' },
     saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    datesRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+    dateBox: { flex: 1 },
+    dateInput: {
+        backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12, fontSize: 16,
+        color: '#111827', borderWidth: 1, borderColor: '#E5E7EB',
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+    },
+    dateInputText: { fontSize: 14, color: '#111827' },
 });

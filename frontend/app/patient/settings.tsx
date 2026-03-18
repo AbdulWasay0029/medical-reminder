@@ -120,6 +120,16 @@ export default function SettingsScreen() {
                         <Text style={styles.codeText}>{inviteCode || '——'}</Text>
                     </View>
                     <View style={styles.codeButtons}>
+                        <TouchableOpacity 
+                            style={styles.codeButton} 
+                            onPress={() => {
+                                require('react-native').Clipboard.setString(inviteCode);
+                                Alert.alert('Copied', 'Invite code copied to clipboard');
+                            }}
+                        >
+                            <Ionicons name="copy-outline" size={18} color="#6366F1" />
+                            <Text style={styles.codeButtonText}>Copy</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.codeButton} onPress={shareCode}>
                             <Ionicons name="share-outline" size={18} color="#6366F1" />
                             <Text style={styles.codeButtonText}>Share</Text>
