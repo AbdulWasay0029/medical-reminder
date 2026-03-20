@@ -1,27 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Alert,
-    ActivityIndicator,
+    View, Text, StyleSheet, ScrollView,
+    KeyboardAvoidingView, Platform, TextInput,
+    TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
-import { authAPI } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 
 export default function LoginScreen() {
+    const { login } = useAuth();
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
-    const router = useRouter();
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -31,17 +24,17 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
-            const response = await authAPI.login(email.trim().toLowerCase(), password);
+            const { authAPI } = require('../../services/api');
+            const response = await authAPI.login(email.toLowerCase().trim(), password);
             await login(response.token, response.user);
-
-            if (response.user.role === 'member' || response.user.role === 'patient') {
-                router.replace('/patient');
-            } else {
+            
+            if (response.user.role === 'guardian') {
                 router.replace('/caregiver');
+            } else {
+                router.replace('/patient');
             }
         } catch (error: any) {
-            const msg = error.response?.data?.detail || error.message || 'Invalid credentials';
-            Alert.alert('Login Failed', msg);
+            Alert.alert('Login Failed', error.response?.data?.detail || 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -55,7 +48,7 @@ export default function LoginScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
                     <Ionicons name="medical" size={64} color="#6366F1" />
-                    <Text style={styles.title}>MediRemind</Text>
+                    <Text style={styles.title}>HealthSync</Text>
                     <Text style={styles.subtitle}>Welcome back!</Text>
                 </View>
 
@@ -93,7 +86,7 @@ export default function LoginScreen() {
                         {loading ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.buttonText}>Sign In</Text>
+                            <Text style={styles.buttonText}>Login</Text>
                         )}
                     </TouchableOpacity>
 
@@ -110,80 +103,26 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F9FAFB',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: 24,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 48,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginTop: 16,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        marginTop: 8,
-    },
-    form: {
-        width: '100%',
-    },
+    container: { flex: 1, backgroundColor: '#FFFFFF' },
+    scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+    header: { alignItems: 'center', marginBottom: 48 },
+    title: { fontSize: 32, fontWeight: 'bold', color: '#111827', marginTop: 16 },
+    subtitle: { fontSize: 16, color: '#6B7280', marginTop: 8 },
+    form: { gap: 20 },
     inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#F9FAFB', borderRadius: 12,
+        borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 16,
     },
-    inputIcon: {
-        marginRight: 12,
-    },
-    input: {
-        flex: 1,
-        height: 52,
-        fontSize: 16,
-        color: '#111827',
-    },
+    inputIcon: { marginRight: 12 },
+    input: { flex: 1, height: 56, fontSize: 16, color: '#111827' },
     button: {
-        backgroundColor: '#6366F1',
-        borderRadius: 12,
-        height: 52,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 8,
+        backgroundColor: '#6366F1', height: 56, borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center', marginTop: 8,
     },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 24,
-    },
-    footerText: {
-        color: '#6B7280',
-        fontSize: 14,
-    },
-    link: {
-        color: '#6366F1',
-        fontSize: 14,
-        fontWeight: '600',
-    },
+    buttonDisabled: { opacity: 0.7 },
+    buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
+    footerText: { color: '#6B7280', fontSize: 14 },
+    link: { color: '#6366F1', fontSize: 14, fontWeight: 'bold' },
 });

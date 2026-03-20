@@ -73,7 +73,7 @@ export default function SettingsScreen() {
     const shareCode = async () => {
         try {
             await Share.share({
-                message: `Join me on MediRemind as my Family Guardian! Use my invite code: ${inviteCode}`,
+                message: `Join me on HealthSync as my Family Guardian! Use my invite code: ${inviteCode}`,
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -176,7 +176,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.footer}>
-                <Text style={styles.footerText}>MediRemind v1.0</Text>
+                <Text style={styles.footerText}>HealthSync v1.0</Text>
             </View>
         </ScrollView>
     );

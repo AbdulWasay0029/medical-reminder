@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity,
-    RefreshControl, Alert, ActivityIndicator, Modal, TextInput,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, Modal, TextInput, BackHandler } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { guardianAPI } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,10 +29,17 @@ export default function GuardianDashboard() {
         } catch {
             Alert.alert('Error', 'Failed to load family members');
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            setLoading(false); refreshing && setRefreshing(false);
         }
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => true; // Prevent going back to splash
+            BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        }, [])
+    );
 
     useEffect(() => { loadMembers(); }, [user]);
 

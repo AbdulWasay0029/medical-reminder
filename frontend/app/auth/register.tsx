@@ -1,29 +1,21 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Alert,
-    ActivityIndicator,
+    View, Text, StyleSheet, ScrollView,
+    KeyboardAvoidingView, Platform, TextInput,
+    TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
-import { authAPI } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
+    const { login } = useAuth();
+    const router = useRouter();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'member' | 'guardian'>('member');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
-    const router = useRouter();
 
     const handleRegister = async () => {
         if (!name || !email || !password) {
@@ -33,17 +25,22 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            const response = await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
+            const { authAPI } = require('../../services/api');
+            const response = await authAPI.register(
+                name.trim(),
+                email.toLowerCase().trim(),
+                password,
+                role
+            );
             await login(response.token, response.user);
-
-            if (role === 'member') {
-                router.replace('/patient');
-            } else {
+            
+            if (role === 'guardian') {
                 router.replace('/caregiver');
+            } else {
+                router.replace('/patient');
             }
         } catch (error: any) {
-            const msg = error.response?.data?.detail || error.message || 'Please try again';
-            Alert.alert('Registration Failed', msg);
+            Alert.alert('Registration Failed', error.response?.data?.detail || 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -58,7 +55,7 @@ export default function RegisterScreen() {
                 <View style={styles.header}>
                     <Ionicons name="medical" size={64} color="#6366F1" />
                     <Text style={styles.title}>Create Account</Text>
-                    <Text style={styles.subtitle}>Join MediRemind today</Text>
+                    <Text style={styles.subtitle}>Join HealthSync today</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -98,29 +95,24 @@ export default function RegisterScreen() {
                         />
                     </View>
 
-                    <Text style={styles.roleLabel}>I am a:</Text>
                     <View style={styles.roleContainer}>
-                        <TouchableOpacity
-                            style={[styles.roleButton, role === 'member' && styles.roleButtonActive]}
-                            onPress={() => setRole('member')}
-                        >
-                            <Ionicons name="person" size={24} color={role === 'member' ? '#FFFFFF' : '#6366F1'} />
-                            <Text style={[styles.roleText, role === 'member' && styles.roleTextActive]}>
-                                Family Member
-                            </Text>
-                            <Text style={styles.roleSubtext}>takes medicines</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.roleButton, role === 'guardian' && styles.roleButtonActive]}
-                            onPress={() => setRole('guardian')}
-                        >
-                            <Ionicons name="shield-checkmark" size={24} color={role === 'guardian' ? '#FFFFFF' : '#6366F1'} />
-                            <Text style={[styles.roleText, role === 'guardian' && styles.roleTextActive]}>
-                                Family Guardian
-                            </Text>
-                            <Text style={[styles.roleSubtext, role === 'guardian' && { color: '#C7D2FE' }]}>monitors family</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.roleLabel}>I am a:</Text>
+                        <View style={styles.roleButtons}>
+                            <TouchableOpacity
+                                style={[styles.roleButton, role === 'member' && styles.roleButtonActive]}
+                                onPress={() => setRole('member')}
+                            >
+                                <Ionicons name="person" size={20} color={role === 'member' ? '#FFFFFF' : '#6366F1'} />
+                                <Text style={[styles.roleButtonText, role === 'member' && styles.roleButtonTextActive]}>Patient</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.roleButton, role === 'guardian' && styles.roleButtonActive]}
+                                onPress={() => setRole('guardian')}
+                            >
+                                <Ionicons name="shield" size={20} color={role === 'guardian' ? '#FFFFFF' : '#10B981'} />
+                                <Text style={[styles.roleButtonText, role === 'guardian' && styles.roleButtonTextActive]}>Guardian</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -137,8 +129,8 @@ export default function RegisterScreen() {
 
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Already have an account? </Text>
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <Text style={styles.link}>Sign In</Text>
+                        <TouchableOpacity onPress={() => router.push('/auth/login')}>
+                            <Text style={styles.link}>Login</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -148,122 +140,36 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F9FAFB',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: 24,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginTop: 16,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        marginTop: 8,
-    },
-    form: {
-        width: '100%',
-    },
+    container: { flex: 1, backgroundColor: '#FFFFFF' },
+    scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+    header: { alignItems: 'center', marginBottom: 32 },
+    title: { fontSize: 32, fontWeight: 'bold', color: '#111827', marginTop: 16 },
+    subtitle: { fontSize: 16, color: '#6B7280', marginTop: 8 },
+    form: { gap: 16 },
     inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#F9FAFB', borderRadius: 12,
+        borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 16,
     },
-    inputIcon: {
-        marginRight: 12,
-    },
-    input: {
-        flex: 1,
-        height: 52,
-        fontSize: 16,
-        color: '#111827',
-    },
-    roleLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#111827',
-        marginBottom: 12,
-    },
-    roleContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 24,
-    },
+    inputIcon: { marginRight: 12 },
+    input: { flex: 1, height: 56, fontSize: 16, color: '#111827' },
+    roleContainer: { marginTop: 8 },
+    roleLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 12 },
+    roleButtons: { flexDirection: 'row', gap: 12 },
     roleButton: {
-        flex: 1,
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 2,
-        borderColor: '#E5E7EB',
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        height: 50, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', gap: 8,
     },
-    roleButtonActive: {
-        backgroundColor: '#6366F1',
-        borderColor: '#6366F1',
-    },
-    roleText: {
-        marginLeft: 8,
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#6366F1',
-        textAlign: 'center',
-    },
-    roleSubtext: {
-        fontSize: 11,
-        color: '#9CA3AF',
-        textAlign: 'center',
-        marginTop: 2,
-    },
-    roleTextActive: {
-        color: '#FFFFFF',
-    },
+    roleButtonActive: { backgroundColor: '#6366F1', borderColor: '#6366F1' },
+    roleButtonText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+    roleButtonTextActive: { color: '#FFFFFF' },
     button: {
-        backgroundColor: '#6366F1',
-        borderRadius: 12,
-        height: 52,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 8,
+        backgroundColor: '#6366F1', height: 56, borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center', marginTop: 8,
     },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 24,
-    },
-    footerText: {
-        color: '#6B7280',
-        fontSize: 14,
-    },
-    link: {
-        color: '#6366F1',
-        fontSize: 14,
-        fontWeight: '600',
-    },
+    buttonDisabled: { opacity: 0.7 },
+    buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
+    footerText: { color: '#6B7280', fontSize: 14 },
+    link: { color: '#6366F1', fontSize: 14, fontWeight: 'bold' },
 });

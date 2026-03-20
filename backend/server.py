@@ -6,7 +6,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Any, Dict, Union
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from jose import jwt
@@ -47,20 +47,20 @@ def make_token(data: dict):
 def make_invite_code():
     return ''.join(random.choices(string.digits, k=6))
 
-def sdoc(doc):
+def sdoc(doc: Union[dict, list, Any]) -> Any:
     """Recursively serialize a MongoDB document to JSON-safe dict."""
     if doc is None: return None
     if isinstance(doc, list): return [sdoc(d) for d in doc]
     if isinstance(doc, dict):
-        out = {}
+        out: Dict[str, Any] = {}
         for k, v in doc.items():
-            key = 'id' if k == '_id' else k
+            key = str('id' if k == '_id' else k)
             if isinstance(v, ObjectId): out[key] = str(v)
             elif isinstance(v, datetime): out[key] = v.isoformat()
             elif isinstance(v, (dict, list)): out[key] = sdoc(v)
             else: out[key] = v
         return out
-    return doc
+    return doc if not isinstance(doc, ObjectId) else str(doc)
 
 def compute_status(log: Optional[dict], sched_h: int, sched_m: int, local_now: datetime) -> str:
     """
@@ -86,7 +86,7 @@ class UserRegister(BaseModel):
     password: str
     role: str  # "member" | "guardian"
 
-class UserLogin(BaseModel):
+class UserLogin(BaseModel) :
     email: EmailStr
     password: str
 
@@ -151,11 +151,11 @@ async def login(body: UserLogin):
 # ── Medicines ─────────────────────────────────────────────────────────────────
 
 @api_router.post("/medicines")
-async def create_medicine(body: MedicineCreate, user_id: str = None):
+async def create_medicine(body: MedicineCreate, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         doc = {
-            "patientId": user_id,   # store as string — no ObjectId confusion
+            "patientId": user_id,
             "name": body.name, "dosage": body.dosage,
             "reminderTimes": body.reminderTimes,
             "startDate": body.startDate,
@@ -171,7 +171,7 @@ async def create_medicine(body: MedicineCreate, user_id: str = None):
         logger.error(f"create_medicine: {e}"); raise HTTPException(500, str(e))
 
 @api_router.get("/medicines/my")
-async def get_my_medicines(user_id: str = None):
+async def get_my_medicines(user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         meds = await db.medicines.find({"patientId": user_id}).to_list(1000)
@@ -181,7 +181,7 @@ async def get_my_medicines(user_id: str = None):
         logger.error(f"get_medicines: {e}"); raise HTTPException(500, str(e))
 
 @api_router.put("/medicines/{medicine_id}")
-async def update_medicine(medicine_id: str, body: MedicineUpdate, user_id: str = None):
+async def update_medicine(medicine_id: str, body: MedicineUpdate, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         med = await db.medicines.find_one({"_id": ObjectId(medicine_id)})
@@ -196,7 +196,7 @@ async def update_medicine(medicine_id: str, body: MedicineUpdate, user_id: str =
         logger.error(f"update_medicine: {e}"); raise HTTPException(500, str(e))
 
 @api_router.delete("/medicines/{medicine_id}")
-async def delete_medicine(medicine_id: str, user_id: str = None):
+async def delete_medicine(medicine_id: str, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         med = await db.medicines.find_one({"_id": ObjectId(medicine_id)})
@@ -214,25 +214,12 @@ async def delete_medicine(medicine_id: str, user_id: str = None):
 
 @api_router.get("/dashboard/{patient_id}")
 async def get_dashboard(patient_id: str, tz_offset: int = 0):
-    """
-    tz_offset = JS getTimezoneOffset() value (e.g. -330 for IST +5:30).
-    local_now = utcnow - tz_offset  (JS sign is inverted from UTC offset)
-
-    Algorithm:
-      1. Fetch all medicines for patient.
-      2. Generate today's schedule from medicine.reminderTimes.
-      3. For each (medicine, time): look up log by (medicineId, date, scheduledTime).
-      4. Compute status from time rules.
-      5. Auto-persist 'missed' logs so history is complete.
-    """
     try:
         utc_now = datetime.utcnow()
         local_now = utc_now - timedelta(minutes=tz_offset)
         today_str = local_now.strftime("%Y-%m-%d")
 
         medicines = await db.medicines.find({"patientId": patient_id}).to_list(1000)
-
-        # Fetch all of today's logs in one query
         today_logs = await db.logs.find(
             {"patientId": patient_id, "date": today_str}
         ).to_list(1000)
@@ -241,22 +228,17 @@ async def get_dashboard(patient_id: str, tz_offset: int = 0):
         items = []
         for med in medicines:
             med_id = str(med["_id"])
-            
-            # DATE RANGE FILTERING
-            start = med.get("startDate") # "YYYY-MM-DD"
+            start = med.get("startDate")
             end = med.get("endDate")
             
-            if start and today_str < start:
-                continue # hasn't started yet
-            if end and today_str > end:
-                continue # treatment finished
+            if start and today_str < start: continue
+            if end and today_str > end: continue
             
             for t in med.get("reminderTimes", []):
                 h, m = map(int, t.split(":"))
                 log = log_index.get((med_id, t))
                 status = compute_status(log, h, m, local_now)
 
-                # Auto-persist missed so history is complete
                 if status == "missed" and (log is None or log.get("status") not in ("taken", "missed")):
                     await db.logs.update_one(
                         {"medicineId": med_id, "patientId": patient_id, "date": today_str, "scheduledTime": t},
@@ -285,22 +267,17 @@ async def get_dashboard(patient_id: str, tz_offset: int = 0):
 # ── Logs (mark taken / history) ───────────────────────────────────────────────
 
 @api_router.post("/logs/mark-taken")
-async def mark_taken(body: MarkTakenRequest, user_id: str = None):
-    """Upsert a log with status=taken. Works even if dose is already 'missed'."""
+async def mark_taken(body: MarkTakenRequest, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         await db.logs.update_one(
             {
-                "medicineId": body.medicineId,
-                "patientId": user_id,
-                "date": body.date,
-                "scheduledTime": body.scheduledTime
+                "medicineId": body.medicineId, "patientId": user_id,
+                "date": body.date, "scheduledTime": body.scheduledTime
             },
             {
                 "$set": {
-                    "status": "taken",
-                    "takenAt": datetime.utcnow(),
-                    "updatedAt": datetime.utcnow()
+                    "status": "taken", "takenAt": datetime.utcnow(), "updatedAt": datetime.utcnow()
                 }
             },
             upsert=True
@@ -312,18 +289,15 @@ async def mark_taken(body: MarkTakenRequest, user_id: str = None):
 
 @api_router.get("/logs/history/{patient_id}")
 async def get_history(patient_id: str, days: int = 7, tz_offset: int = 0):
-    """Return logs from the past N days, newest first, joined with medicine name."""
     try:
         utc_now = datetime.utcnow()
         local_now = utc_now - timedelta(minutes=tz_offset)
-        # Generate date strings for the past N days
         dates = [(local_now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
 
         logs = await db.logs.find(
             {"patientId": patient_id, "date": {"$in": dates}}
         ).sort("date", -1).to_list(1000)
 
-        # Enrich with medicine name
         enriched = []
         med_cache = {}
         for log in logs:
@@ -346,7 +320,7 @@ async def get_history(patient_id: str, days: int = 7, tz_offset: int = 0):
 # ── Guardian ──────────────────────────────────────────────────────────────────
 
 @api_router.post("/guardian/link")
-async def link_guardian(body: GuardianLinkRequest, user_id: str = None):
+async def link_guardian(body: GuardianLinkRequest, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         member = await db.users.find_one({"inviteCode": body.inviteCode, "role": {"$in": ["member", "patient"]}})
@@ -363,22 +337,21 @@ async def link_guardian(body: GuardianLinkRequest, user_id: str = None):
         logger.error(f"link_guardian: {e}"); raise HTTPException(500, str(e))
 
 @api_router.get("/guardian/members")
-async def get_guardian_members(user_id: str = None):
+async def get_guardian_members(user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         links = await db.guardian_links.find({"guardianId": user_id}).to_list(1000)
         members = []
         for link in links:
             member = await db.users.find_one({"_id": ObjectId(link["memberId"])})
-            if member:
-                members.append(sdoc(member))
+            if member: members.append(sdoc(member))
         return {"members": members}
     except HTTPException: raise
     except Exception as e:
         logger.error(f"get_guardian_members: {e}"); raise HTTPException(500, str(e))
 
 @api_router.get("/guardian/member/{member_id}/medicines")
-async def get_member_medicines(member_id: str, user_id: str = None):
+async def get_member_medicines(member_id: str, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         link = await db.guardian_links.find_one({"guardianId": user_id, "memberId": member_id})
@@ -390,12 +363,11 @@ async def get_member_medicines(member_id: str, user_id: str = None):
         logger.error(f"get_member_medicines: {e}"); raise HTTPException(500, str(e))
 
 @api_router.get("/guardian/member/{member_id}/dashboard")
-async def get_member_dashboard(member_id: str, user_id: str = None, tz_offset: int = 0):
+async def get_member_dashboard(member_id: str, user_id: Optional[str] = None, tz_offset: int = 0):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         link = await db.guardian_links.find_one({"guardianId": user_id, "memberId": member_id})
         if not link: raise HTTPException(403, "Access denied")
-        # Reuse dashboard logic
         return await get_dashboard(member_id, tz_offset)
     except HTTPException: raise
     except Exception as e:
@@ -405,7 +377,7 @@ async def get_member_dashboard(member_id: str, user_id: str = None, tz_offset: i
 # ── Member (patient) ──────────────────────────────────────────────────────────
 
 @api_router.get("/members/me")
-async def get_member_profile(user_id: str = None):
+async def get_member_profile(user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -416,7 +388,7 @@ async def get_member_profile(user_id: str = None):
         logger.error(f"get_profile: {e}"); raise HTTPException(500, str(e))
 
 @api_router.post("/members/regenerate-code")
-async def regenerate_invite_code(user_id: str = None):
+async def regenerate_invite_code(user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
         new_code = make_invite_code()
