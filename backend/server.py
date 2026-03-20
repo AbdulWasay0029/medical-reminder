@@ -350,18 +350,6 @@ async def get_guardian_members(user_id: Optional[str] = None):
     except Exception as e:
         logger.error(f"get_guardian_members: {e}"); raise HTTPException(500, str(e))
 
-@api_router.get("/guardian/member/{member_id}/medicines")
-async def get_member_medicines(member_id: str, user_id: Optional[str] = None):
-    try:
-        if not user_id: raise HTTPException(401, "user_id required")
-        link = await db.guardian_links.find_one({"guardianId": user_id, "memberId": member_id})
-        if not link: raise HTTPException(403, "Access denied")
-        meds = await db.medicines.find({"patientId": member_id}).to_list(1000)
-        return {"medicines": sdoc(meds)}
-    except HTTPException: raise
-    except Exception as e:
-        logger.error(f"get_member_medicines: {e}"); raise HTTPException(500, str(e))
-
 @api_router.get("/guardian/member/{member_id}/dashboard")
 async def get_member_dashboard(member_id: str, user_id: Optional[str] = None, tz_offset: int = 0):
     try:

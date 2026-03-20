@@ -35,9 +35,9 @@ export default function GuardianDashboard() {
 
     useFocusEffect(
         React.useCallback(() => {
-            const onBackPress = () => true; // Prevent going back to splash
-            BackHandler.addEventListener('hardwareBackPress', onBackPress);
-            return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+            const onBackPress = () => true; 
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
         }, [])
     );
 
@@ -67,7 +67,7 @@ export default function GuardianDashboard() {
     const renderMemberItem = ({ item }: { item: Member }) => (
         <TouchableOpacity
             style={styles.memberCard}
-            onPress={() => router.push({ pathname: '/caregiver/member/[id]', params: { id: item.id } })}
+            onPress={() => router.push(`/caregiver/member/${item.id}`)}
         >
             <View style={styles.memberIcon}>
                 <Ionicons name="person" size={28} color="#10B981" />

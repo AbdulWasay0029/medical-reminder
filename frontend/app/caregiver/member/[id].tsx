@@ -72,13 +72,18 @@ export default function MemberDetailScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={styles.premiumHeader}>
+            <View style={styles.topHeader}>
+                <Text style={styles.mainTitle}>Family Member</Text>
+            </View>
+            <View style={styles.subHeader}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Family Member's Day</Text>
                 <View style={{ width: 36 }} />
             </View>
+        </View>
 
             <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />}>
                 {/* Stats */}
@@ -106,7 +111,7 @@ export default function MemberDetailScreen() {
                         </View>
                     ) : (
                         items.map(item => {
-                            const cfg = STATUS_CONFIG[item.status];
+                            const cfg = STATUS_CONFIG[item.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
                             return (
                                 <View key={item.id} style={[styles.card, item.status === 'missed' && styles.cardMissed]}>
                                     <View style={styles.cardTop}>
@@ -136,9 +141,25 @@ export default function MemberDetailScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#10B981', padding: 16, paddingTop: 48,
+    premiumHeader: {
+        backgroundColor: '#10B981', 
+        paddingTop: 48,
+    },
+    topHeader: {
+        paddingHorizontal: 20,
+        paddingBottom: 8,
+    },
+    mainTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+    },
+    subHeader: {
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: 16,
+        paddingTop: 4,
     },
     backButton: { width: 36, height: 36, justifyContent: 'center' },
     headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },

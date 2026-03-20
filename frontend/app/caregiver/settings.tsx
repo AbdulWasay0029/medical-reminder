@@ -21,6 +21,7 @@ export default function GuardianSettingsScreen() {
         ]);
     };
 
+    if (!user) return null;
     return (
         <ScrollView style={styles.container}>
             <View style={styles.section}>
@@ -28,8 +29,8 @@ export default function GuardianSettingsScreen() {
                     <View style={styles.avatar}>
                         <Ionicons name="shield-checkmark" size={32} color="#10B981" />
                     </View>
-                    <Text style={styles.name}>{user?.name}</Text>
-                    <Text style={styles.email}>{user?.email}</Text>
+                    <Text style={styles.name}>{user.name}</Text>
+                    <Text style={styles.email}>{user.email}</Text>
                     <View style={styles.roleBadge}>
                         <Text style={styles.roleText}>Family Guardian</Text>
                     </View>

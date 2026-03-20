@@ -52,8 +52,6 @@ export const guardianAPI = {
         (await api.post(`guardian/link?user_id=${userId}`, { inviteCode })).data,
     getMembers: async (userId: string) =>
         (await api.get(`guardian/members?user_id=${userId}`)).data,
-    getMemberMedicines: async (userId: string, memberId: string) =>
-        (await api.get(`guardian/member/${memberId}/medicines?user_id=${userId}`)).data,
     getMemberDashboard: async (userId: string, memberId: string) =>
         (await api.get(`guardian/member/${memberId}/dashboard?user_id=${userId}&tz_offset=${tzOffset()}`)).data,
 };

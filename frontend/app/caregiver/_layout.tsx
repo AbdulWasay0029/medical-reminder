@@ -43,14 +43,6 @@ export default function CaregiverLayout() {
                     title: 'Family Member',
                 }}
             />
-            <Tabs.Screen
-                name="patient/[id]"
-                options={{
-                    href: null,
-                    headerShown: true,
-                    title: 'Family Member',
-                }}
-            />
         </Tabs>
     );
 }
