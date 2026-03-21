@@ -44,6 +44,7 @@ export default function MemberDetailScreen() {
         if (!user || !id) return;
         try {
             const res = await guardianAPI.getMemberDashboard(user.id, id as string);
+            console.log('Member Dashboard Data:', res);
             setItems(res.items ?? []);
         } catch (e) {
             console.error('Error loading member dashboard:', e);

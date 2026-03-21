@@ -257,8 +257,12 @@ async def get_dashboard(patient_id: str, tz_offset: int = 0):
                     "takenAt": log["takenAt"].isoformat() if log and log.get("takenAt") else None,
                 })
 
+        # Fetch patient name
+        patient = await db.users.find_one({"_id": ObjectId(patient_id)})
+        patient_name = patient.get("name", "Unknown") if patient else "Unknown"
+
         items.sort(key=lambda x: x["scheduledTime"])
-        return {"items": items, "date": today_str}
+        return {"items": items, "date": today_str, "patient_name": patient_name}
     except HTTPException: raise
     except Exception as e:
         logger.error(f"get_dashboard: {e}"); raise HTTPException(500, str(e))
