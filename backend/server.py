@@ -343,12 +343,16 @@ async def link_guardian(body: GuardianLinkRequest, user_id: Optional[str] = None
 @api_router.delete("/guardian/unlink/{member_id}")
 async def unlink_guardian(member_id: str, user_id: Optional[str] = None):
     try:
-        if not user_id: raise HTTPException(401, "user_id required")
+        # 1. Input Validation & Logging
+        if not user_id: 
+            logger.error("unlink_guardian: Missing user_id query param")
+            raise HTTPException(401, "user_id required")
         
-        gid = user_id.strip()
-        mid = member_id.strip()
+        gid, mid = user_id.strip(), member_id.strip()
+        logger.info(f"UNLINK REQUEST -> Guardian: [{gid}], Member: [{mid}]")
         
-        # Build a flexible query to handle both string and ObjectId types
+        # 2. Query Construction
+        # Hand-assembling common patterns found in DB exports
         query = {
             "$or": [
                 {"guardianId": gid, "memberId": mid},
@@ -357,17 +361,24 @@ async def unlink_guardian(member_id: str, user_id: Optional[str] = None):
             ]
         }
         
-        logger.info(f"Flexible Unlink Query: {query}")
+        # 3. Diagnostic: Check if any link exists for this guardian before deleting
+        total_links = await db.guardian_links.count_documents({"guardianId": gid})
+        logger.info(f"DIAGNOSTIC: Guardian [{gid}] has {total_links} total links in DB")
+        
+        # 4. Attempt Deletion
         res = await db.guardian_links.delete_one(query)
-        logger.info(f"Unlink Result: {res.deleted_count} removed")
+        logger.info(f"UNLINK EXECUTION -> Deleted Count: {res.deleted_count}")
         
         if res.deleted_count == 0:
-            raise HTTPException(404, "Link not found")
+            # Let's see what a link actually looks like for this guardian
+            sample = await db.guardian_links.find_one({"guardianId": gid})
+            logger.error(f"UNLINK FAILED: No exact match for mid={mid}. Sample link for this gid: {sample}")
+            raise HTTPException(404, f"Link not found between {gid} and {mid}")
             
         return {"success": True}
     except HTTPException: raise
     except Exception as e:
-        logger.error(f"unlink_guardian: {e}"); raise HTTPException(500, str(e))
+        logger.error(f"unlink_guardian_critical: {e}"); raise HTTPException(500, str(e))
 
 @api_router.get("/guardian/members")
 async def get_guardian_members(user_id: Optional[str] = None):
