@@ -35,7 +35,7 @@ export default function GuardianDashboard() {
 
     useFocusEffect(
         React.useCallback(() => {
-            const onBackPress = () => true; 
+            const onBackPress = () => true;
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
             return () => subscription.remove();
         }, [])
@@ -70,8 +70,8 @@ export default function GuardianDashboard() {
             `Remove ${member.name} from your list?`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Remove', 
+                {
+                    text: 'Remove',
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -98,8 +98,8 @@ export default function GuardianDashboard() {
                 <Text style={styles.memberName}>{item.name}</Text>
                 <Text style={styles.memberEmail}>{item.email}</Text>
             </View>
-            <TouchableOpacity 
-                style={styles.deleteButton} 
+            <TouchableOpacity
+                style={styles.deleteButton}
                 onPress={() => handleUnlinkMember(item)}
             >
                 <Ionicons name="trash-outline" size={20} color="#EF4444" />
@@ -165,7 +165,7 @@ export default function GuardianDashboard() {
                                     : <>
                                         <Ionicons name="link" size={20} color="#FFFFFF" />
                                         <Text style={styles.linkButtonText}>Link Family Member</Text>
-                                      </>
+                                    </>
                                 }
                             </TouchableOpacity>
                         </View>
