@@ -63,7 +63,7 @@ export default function GuardianSettingsScreen() {
             </View>
 
             <View style={styles.footer}>
-                <Text style={styles.footerText}>MediRemind v1.0</Text>
+                <Text style={styles.footerText}>HealthSync v1.0</Text>
             </View>
         </ScrollView>
     );

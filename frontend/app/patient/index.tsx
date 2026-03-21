@@ -86,7 +86,7 @@ export default function DashboardScreen() {
     const dayStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
     const renderItem = ({ item }: { item: DashItem }) => {
-        const cfg = STATUS_CONFIG[item.status];
+        const cfg = STATUS_CONFIG[item.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
         const isMarking = markingId === item.id;
         const canMark = item.status !== 'taken';
 

@@ -84,10 +84,7 @@ export default function GuardianDashboard() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Family</Text>
-                <Text style={styles.headerSubtitle}>Monitor medicine schedules and adherence</Text>
-            </View>
+            <View style={{ height: 16 }} />
 
             <FlatList
                 data={members}

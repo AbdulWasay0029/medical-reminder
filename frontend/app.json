@@ -5,13 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mediremind",
+    "scheme": "healthsync",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "Get reminders to take your medicines on time"
+        "NSUserNotificationsUsageDescriptioyn": "Get reminders to take your medicines on time"
       }
     },
     "android": {
@@ -58,7 +58,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6adc416f-6ead-436d-a810-6f8a83d9aa7b"
+        "projectId": "736b8a6b-ad77-4068-8e78-a07d4d7aa45b"
       }
     }
   }

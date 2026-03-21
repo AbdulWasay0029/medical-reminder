@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 
 export default function CaregiverLayout() {
     return (
@@ -13,7 +14,7 @@ export default function CaregiverLayout() {
                     borderTopColor: '#E5E7EB',
                     borderTopWidth: 1,
                     paddingTop: 8,
-                    paddingBottom: 24, // Increased padding to clear on-screen buttons
+                    paddingBottom: 24,
                 },
                 headerStyle: { backgroundColor: '#10B981' },
                 headerTintColor: '#FFFFFF',
@@ -34,13 +35,18 @@ export default function CaregiverLayout() {
                     tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
                 }}
             />
-            {/* Hide dynamic detail routes from the tab bar */}
+            {/* Hide dynamic detail routes from the tab bar but keep headers */}
             <Tabs.Screen
                 name="member/[id]"
                 options={{
                     href: null,
                     headerShown: true,
-                    title: 'Family Member',
+                    title: 'Member Schedule',
+                    headerLeft: () => (
+                        <TouchableOpacity style={{ marginLeft: 16 }} onPress={() => require('expo-router').router.back()}>
+                            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    ),
                 }}
             />
         </Tabs>

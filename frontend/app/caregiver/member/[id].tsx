@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, ActivityIndicator, FlatList
+    RefreshControl, ActivityIndicator
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -72,19 +72,6 @@ export default function MemberDetailScreen() {
 
     return (
         <View style={styles.container}>
-        <View style={styles.premiumHeader}>
-            <View style={styles.topHeader}>
-                <Text style={styles.mainTitle}>Family Member</Text>
-            </View>
-            <View style={styles.subHeader}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Family Member's Day</Text>
-                <View style={{ width: 36 }} />
-            </View>
-        </View>
-
             <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />}>
                 {/* Stats */}
                 <View style={styles.statsCard}>
@@ -141,28 +128,6 @@ export default function MemberDetailScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    premiumHeader: {
-        backgroundColor: '#10B981', 
-        paddingTop: 48,
-    },
-    topHeader: {
-        paddingHorizontal: 20,
-        paddingBottom: 8,
-    },
-    mainTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-    },
-    subHeader: {
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        padding: 16,
-        paddingTop: 4,
-    },
-    backButton: { width: 36, height: 36, justifyContent: 'center' },
-    headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
     statsCard: {
         flexDirection: 'row', backgroundColor: '#FFFFFF',
         margin: 16, borderRadius: 12, padding: 16,
