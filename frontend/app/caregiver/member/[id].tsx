@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    View, Text, StyleSheet, ScrollView,
     RefreshControl, ActivityIndicator
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import { guardianAPI } from '../../../services/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,9 +20,9 @@ interface DashItem {
 }
 
 const STATUS_CONFIG = {
-    pending: { label: 'Pending', bg: '#F59E0B', text: '#FFFFFF', icon: 'time-outline' as const },
-    taken: { label: 'Taken', bg: '#10B981', text: '#FFFFFF', icon: 'checkmark-circle-outline' as const },
-    missed: { label: 'Missed', bg: '#EF4444', text: '#FFFFFF', icon: 'close-circle-outline' as const },
+    pending: { label: 'Pending',  bg: '#F59E0B', text: '#FFFFFF', icon: 'time-outline' as const },
+    taken:   { label: 'Taken',    bg: '#10B981', text: '#FFFFFF', icon: 'checkmark-circle-outline' as const },
+    missed:  { label: 'Missed',   bg: '#EF4444', text: '#FFFFFF', icon: 'close-circle-outline' as const },
 };
 
 function fmt12(t: string) {
@@ -36,6 +36,7 @@ export default function MemberDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { user } = useAuth();
     const router = useRouter();
+    const navigation = useNavigation();
     const [items, setItems] = useState<DashItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -44,8 +45,11 @@ export default function MemberDetailScreen() {
         if (!user || !id) return;
         try {
             const res = await guardianAPI.getMemberDashboard(user.id, id as string);
-            console.log('Member Dashboard Data:', res);
             setItems(res.items ?? []);
+            if (res.patient_name) {
+                // Update navigation title dynamically to "(Name)'s Schedule"
+                navigation.setOptions({ title: `${res.patient_name}'s Schedule` });
+            }
         } catch (e) {
             console.error('Error loading member dashboard:', e);
         } finally {
@@ -89,8 +93,8 @@ export default function MemberDetailScreen() {
                     ))}
                 </View>
 
-                <Text style={styles.sectionTitle}>Today's Schedule</Text>
-
+                <Text style={styles.sectionTitle}>Today's schedule</Text>
+                
                 <View style={styles.content}>
                     {items.length === 0 ? (
                         <View style={styles.emptyContainer}>

@@ -340,6 +340,15 @@ async def link_guardian(body: GuardianLinkRequest, user_id: Optional[str] = None
     except Exception as e:
         logger.error(f"link_guardian: {e}"); raise HTTPException(500, str(e))
 
+@api_router.delete("/guardian/unlink/{member_id}")
+async def unlink_guardian(member_id: str, user_id: Optional[str] = None):
+    try:
+        if not user_id: raise HTTPException(401, "user_id required")
+        await db.guardian_links.delete_one({"guardianId": user_id, "memberId": member_id})
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"unlink_guardian: {e}"); raise HTTPException(500, str(e))
+
 @api_router.get("/guardian/members")
 async def get_guardian_members(user_id: Optional[str] = None):
     try:
