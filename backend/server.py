@@ -344,13 +344,18 @@ async def link_guardian(body: GuardianLinkRequest, user_id: Optional[str] = None
 async def unlink_guardian(member_id: str, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
-        logger.info(f"Unlink Attempt: guardianId={user_id}, memberId={member_id}")
         
-        # Trim whitespace just in case
-        gid = user_id.strip()
-        mid = member_id.strip()
+        # Build a flexible query to handle both string and ObjectId types
+        query = {
+            "$or": [
+                {"guardianId": user_id, "memberId": member_id},
+                {"guardianId": ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id, 
+                 "memberId": ObjectId(member_id) if ObjectId.is_valid(member_id) else member_id}
+            ]
+        }
         
-        res = await db.guardian_links.delete_one({"guardianId": gid, "memberId": mid})
+        logger.info(f"Flexible Unlink Query: {query}")
+        res = await db.guardian_links.delete_one(query)
         logger.info(f"Unlink Result: {res.deleted_count} removed")
         return {"success": True}
     except Exception as e:
