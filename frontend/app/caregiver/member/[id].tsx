@@ -20,9 +20,9 @@ interface DashItem {
 }
 
 const STATUS_CONFIG = {
-    pending: { label: 'Pending',  bg: '#F59E0B', text: '#FFFFFF', icon: 'time-outline' as const },
-    taken:   { label: 'Taken',    bg: '#10B981', text: '#FFFFFF', icon: 'checkmark-circle-outline' as const },
-    missed:  { label: 'Missed',   bg: '#EF4444', text: '#FFFFFF', icon: 'close-circle-outline' as const },
+    pending: { label: 'Pending', bg: '#F59E0B', text: '#FFFFFF', icon: 'time-outline' as const },
+    taken: { label: 'Taken', bg: '#10B981', text: '#FFFFFF', icon: 'checkmark-circle-outline' as const },
+    missed: { label: 'Missed', bg: '#EF4444', text: '#FFFFFF', icon: 'close-circle-outline' as const },
 };
 
 function fmt12(t: string) {
@@ -89,7 +89,7 @@ export default function MemberDetailScreen() {
                 </View>
 
                 <Text style={styles.sectionTitle}>Today's Schedule</Text>
-                
+
                 <View style={styles.content}>
                     {items.length === 0 ? (
                         <View style={styles.emptyContainer}>
