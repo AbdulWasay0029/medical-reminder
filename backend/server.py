@@ -344,7 +344,14 @@ async def link_guardian(body: GuardianLinkRequest, user_id: Optional[str] = None
 async def unlink_guardian(member_id: str, user_id: Optional[str] = None):
     try:
         if not user_id: raise HTTPException(401, "user_id required")
-        await db.guardian_links.delete_one({"guardianId": user_id, "memberId": member_id})
+        logger.info(f"Unlink Attempt: guardianId={user_id}, memberId={member_id}")
+        
+        # Trim whitespace just in case
+        gid = user_id.strip()
+        mid = member_id.strip()
+        
+        res = await db.guardian_links.delete_one({"guardianId": gid, "memberId": mid})
+        logger.info(f"Unlink Result: {res.deleted_count} removed")
         return {"success": True}
     except Exception as e:
         logger.error(f"unlink_guardian: {e}"); raise HTTPException(500, str(e))

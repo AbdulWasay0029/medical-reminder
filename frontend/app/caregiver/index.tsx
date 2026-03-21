@@ -64,6 +64,28 @@ export default function GuardianDashboard() {
         }
     };
 
+    const handleUnlinkMember = (member: Member) => {
+        Alert.alert(
+            'Unlink Member',
+            `Remove ${member.name} from your list?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Remove', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await guardianAPI.unlinkMember(user!.id, member.id);
+                            loadMembers();
+                        } catch (e) {
+                            Alert.alert('Error', 'Failed to unlink member');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const renderMemberItem = ({ item }: { item: Member }) => (
         <TouchableOpacity
             style={styles.memberCard}
@@ -76,6 +98,12 @@ export default function GuardianDashboard() {
                 <Text style={styles.memberName}>{item.name}</Text>
                 <Text style={styles.memberEmail}>{item.email}</Text>
             </View>
+            <TouchableOpacity 
+                style={styles.deleteButton} 
+                onPress={() => handleUnlinkMember(item)}
+            >
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </TouchableOpacity>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
         </TouchableOpacity>
     );
@@ -137,7 +165,7 @@ export default function GuardianDashboard() {
                                     : <>
                                         <Ionicons name="link" size={20} color="#FFFFFF" />
                                         <Text style={styles.linkButtonText}>Link Family Member</Text>
-                                    </>
+                                      </>
                                 }
                             </TouchableOpacity>
                         </View>
@@ -151,11 +179,6 @@ export default function GuardianDashboard() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: {
-        backgroundColor: '#10B981', padding: 20, paddingTop: 16, paddingBottom: 20,
-    },
-    headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 2 },
-    headerSubtitle: { fontSize: 13, color: '#D1FAE5' },
     listContent: { padding: 16 },
     memberCard: {
         flexDirection: 'row', alignItems: 'center',
@@ -169,6 +192,7 @@ const styles = StyleSheet.create({
     memberInfo: { flex: 1 },
     memberName: { fontSize: 17, fontWeight: '600', color: '#111827', marginBottom: 3 },
     memberEmail: { fontSize: 13, color: '#6B7280' },
+    deleteButton: { padding: 8, marginRight: 4 },
     fab: {
         position: 'absolute', right: 16, bottom: 16,
         width: 56, height: 56, borderRadius: 28,
