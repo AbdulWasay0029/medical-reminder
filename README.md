@@ -1,56 +1,52 @@
-# 🏥 HealthSync: Premium Medical Assistant (Vercel + Python Architecture)
+# HealthSync — Medication Reminder & Family Monitor
 
-**HealthSync** is a world-class, premium medical assistant designed for sophisticated medication management and automated treatment monitoring. This flagship version utilizes a dedicated Python backend to handle advanced time-based logic and treatment course duration.
+A cross-platform mobile application for medication adherence and real-time family monitoring.
 
----
+## Roles
+- **Patient / Member** — manages medicines, receives alarms, gets an invite code
+- **Guardian / Caregiver** — links via invite code, monitors patient's daily schedule (read-only)
 
-## 🏆 Flagship Features
-- **Smart Treatment Windows:** Automatically schedules reminders between a specific `startDate` and `endDate`. Hides expired medicines from the dashboard automatically.
-- **High-End "Vercel" UI:** A modern, minimalist aesthetic using the Indigo (`#6366F1`) and Emerald (`#10B981`) brand palette.
-- **Family Dashboard Handshake:** Intuitive 6-digit invite code system for linking family members securely across complex backend infrastructures.
-- **Exact-Alarm Trigger Engine:** Bypasses OS limitations for high-reliability medical notifications.
-- **Universal Time Normalizer:** A deterministic 24-hour time engine that ensures perfect scheduling regardless of device locale.
+## Tech Stack
 
-## 🛡️ Technical Stack
-- **Frontend:** React Native (Expo)
-- **Backend Architecture:** Python (FastAPI) deployed on Vercel
-- **Database:** MongoDB Atlas (NoSQL)
-- **State Management:** Context API + Axios Interceptors
-- **Authentication:** JWT (JSON Web Tokens) with Secure Token Storage
+| Layer | Technology |
+|---|---|
+| Mobile App | React Native + Expo (TypeScript) |
+| Backend API | Python (FastAPI 0.110.0) |
+| Database | MongoDB Atlas |
+| Auth | JWT (python-jose) + Bcrypt |
+| Notifications | expo-notifications (local, daily, MAX priority) |
+| HTTP Client | Axios + AsyncStorage (JWT interceptor) |
 
----
-
-## 📦 Project Structure
-```text
-/backend    -> FastAPI Python Server (Vercel Ready)
-/frontend   -> Expo (React Native) Mobile Application
+## Project Structure
+```
+/backend    → FastAPI Python server (server.py)
+/frontend   → Expo React Native app
 ```
 
----
+## Setup
 
-## 🔄 Installation & Setup
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+# create .env with MONGO_URL, SECRET_KEY, DB_NAME
+uvicorn server:app --reload
+```
 
-### **A. Backend (Python)**
-1. Navigate to `/backend`
-2. Create a `.env` file with `MONGO_URL` and `SECRET_KEY`.
-3. Install dependencies: `pip install -r requirements.txt`
-4. Run locally: `uvicorn server:app --reload`
+### Frontend
+```bash
+cd frontend
+npm install
+# create .env with EXPO_PUBLIC_BACKEND_URL
+npm run start
+```
 
-### **B. Frontend (Expo)**
-1. Navigate to `/frontend`
-2. Set `EXPO_PUBLIC_BACKEND_URL` in your `.env` to your backend URL.
-3. Install dependencies: `npm install`
-4. Run locally: `npm run start`
+## Key Features
+- **Exact Alarm Scheduling** — `AndroidImportance.MAX` channel, bypasses Doze mode
+- **Smart Treatment Window** — medicines auto-hide outside `startDate`/`endDate`
+- **60-Minute Grace Period** — server marks a dose as "missed" exactly 60 min after scheduled time
+- **6-Digit Invite Code** — collision-resistant code links Guardian to Patient
+- **Timezone-Aware Dashboard** — frontend sends `tz_offset`, server computes correct "today"
 
----
-
-## 🧩 Architectural Highlights
-This version of HealthSync uses a **Stateless API** design, where the Python server calculates the daily schedule for each patient by factoring in their timezone offset and treatment window. This reduces phone-side processing and ensures "One Source of Truth" for both patients and guardians.
-
-## 🎨 Design Philosophy
-Inspired by **Next.js and Apple Health**, the UI focuses on clarity, calmness, and professional trust. Every micro-animation and layout choice is optimized for users who need critical information at a glance.
-
----
-
-**State-of-the-Art Medication Monitoring.**
-**Author:** Antigravity AI Engine
+## Documentation
+See [`GROUND_TRUTH.md`](./GROUND_TRUTH.md) for the complete technical reference — exact data models, API routes, UI logic, and color palette — used by the team for generating diagrams and reports.
